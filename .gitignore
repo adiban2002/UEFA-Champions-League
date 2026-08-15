@@ -10,3 +10,6 @@ db.sqlite3
 logs/*.log
 .vscode/
 .idea/
+cert.crt
+cert.key
+cloudflared
