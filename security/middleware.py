@@ -1,6 +1,7 @@
 import time
 import re
 import logging
+import urllib.parse
 from django.http import HttpResponseForbidden
 from django.utils.deprecation import MiddlewareMixin
 
@@ -14,8 +15,8 @@ class AdvancedSecurityMiddleware(MiddlewareMixin):
         self.MAX_REQUESTS = 100      
         
         self.threat_patterns = [
-            re.compile(r"(\%27)|(\')|(\-\-)|(\%23)|(#)", re.IGNORECASE),
-            re.compile(r"((\%3D)|(=))[^\n]*((\%27)|(\')|(\-\-)|(\%3B)|(;))", re.IGNORECASE),
+            re.compile(r"(\%27)|(\-\-)|(\%23)", re.IGNORECASE),
+            re.compile(r"((\%3D)|(=))[^\n]*((\%27)|(\%2D\%2D)|(\%3B)|(;))", re.IGNORECASE),
             re.compile(r"<script[^>]*>[\s\S]*?</script>", re.IGNORECASE),
             re.compile(r"UNION\s+SELECT", re.IGNORECASE)
         ]
@@ -23,6 +24,9 @@ class AdvancedSecurityMiddleware(MiddlewareMixin):
     def process_request(self, request):
         client_ip = self.get_client_ip(request)
         current_time = time.time()
+        
+        if request.path.startswith('/admin/login/'):
+            return None
         
         if client_ip not in self.request_counts:
             self.request_counts[client_ip] = []
@@ -34,9 +38,11 @@ class AdvancedSecurityMiddleware(MiddlewareMixin):
             
         self.request_counts[client_ip].append(current_time)
 
-        query_string = request.META.get('QUERY_STRING', '')
+        query_string = urllib.parse.unquote(request.META.get('QUERY_STRING', ''))
         body_data = request.body.decode('utf-8', errors='ignore')
         payload_to_check = query_string + " " + body_data
+        
+        print(f"DEBUG PAYLOAD: {payload_to_check}")
 
         for pattern in self.threat_patterns:
             if pattern.search(payload_to_check):

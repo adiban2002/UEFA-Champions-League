@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>UCL Security Dashboard</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 40px;">
+    <h1>UEFA Champions League - Security Analytics Dashboard</h1>
+    <p>Welcome, <b>{{ request.user.username }}</b>! You have successfully bypassed security checks and logged in.</p>
+    <hr style="border-color: #334155;">
+    <h3>Security Audit Status: <span style="color: #22c55e;">Active & Logging</span></h3>
+    <p>Check your <code>logs/security_audit.log</code> file to view live traffic and security events.</p>
+</body>
+</html>
