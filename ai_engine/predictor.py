@@ -1,8 +1,7 @@
 import os
 import pandas as pd
 from django.conf import settings
-from langchain_community.llms import HuggingFaceEndpoint
-from langchain_core.prompts import PromptTemplate
+from huggingface_hub import InferenceClient
 from .models import MatchPredictionLog
 
 def predict_match_outcome(team_name: str):
@@ -15,24 +14,25 @@ def predict_match_outcome(team_name: str):
     
     stats_summary = team_data.to_string(index=False)
     
-    llm = HuggingFaceEndpoint(
-        repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-        temperature=0.3,
-        max_new_tokens=250,
-        huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+    client = InferenceClient(
+        model="meta-llama/Llama-3.1-8B-Instruct",
+        token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
     )
     
-    prompt = PromptTemplate.from_template(
-        """You are an expert UEFA Champions League football analyst.
+    prompt = f"""You are an expert UEFA Champions League football analyst.
 Based on the following historical stats (columns: year, team, match_played, wins, draws, losts, goals_scored, goals_conceded, gd, group_point, champions):
 {stats_summary}
 
 Analyze the performance for {team_name} and output ONLY a predicted win probability percentage (e.g., 68.5) and a short analytical reason.
 Format: Probability: [number]% | Reason: [text]"""
+
+    response = client.chat_completion(
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=250,
+        temperature=0.3
     )
     
-    chain = prompt | llm
-    response = chain.invoke({"team_name": team_name, "stats_summary": stats_summary})
+    response_text = response.choices[0].message.content
     
     MatchPredictionLog.objects.create(
         team_name=team_name,
@@ -40,4 +40,4 @@ Format: Probability: [number]% | Reason: [text]"""
         anomaly_score=0.15
     )
     
-    return response
+    return response_text
